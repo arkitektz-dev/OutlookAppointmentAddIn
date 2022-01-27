@@ -30,7 +30,12 @@ namespace OutlookAppointment
             //    AppConfig items = JsonConvert.DeserializeObject<AppConfig>(json);
             //}
 
-            Outlook.Folder calFolder =
+           
+        }
+
+        public  void UploadAppointment() { 
+        
+             Outlook.Folder calFolder =
             Application.Session.GetDefaultFolder(
             Outlook.OlDefaultFolders.olFolderCalendar)
             as Outlook.Folder;
@@ -83,6 +88,12 @@ namespace OutlookAppointment
                 Debug.WriteLine("No appointmnet  are here");
             }
 
+                
+        }
+
+        protected override Microsoft.Office.Core.IRibbonExtensibility CreateRibbonExtensibilityObject()
+        {
+            return new MyRibbon();
         }
 
         string GetEmailAddressOfAttendee(Recipient TheRecipient)
@@ -101,12 +112,7 @@ namespace OutlookAppointment
             return null;
         }
 
-        public static object GetProperty(object target, string name)
-        {
-            var site = System.Runtime.CompilerServices.CallSite<Func<System.Runtime.CompilerServices.CallSite, object, object>>.Create(Microsoft.CSharp.RuntimeBinder.Binder.GetMember(0, name, target.GetType(), new[] { Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo.Create(0, null) }));
-            return site.Target(site, target);
-        }
-
+        
         private Outlook.Items GetAppointmentsInRange(Outlook.Folder folder, DateTime startTime, DateTime endTime)
         {
             string filter = "[Start] >= '"
