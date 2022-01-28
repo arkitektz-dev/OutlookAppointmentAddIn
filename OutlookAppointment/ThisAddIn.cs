@@ -10,6 +10,9 @@ using System.Net.Http;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.Office.Interop.Outlook;
+using System.Windows.Forms;
+using System.Threading.Tasks;
+using System.Net.Http.Headers;
 
 namespace OutlookAppointment
 {
@@ -19,76 +22,74 @@ namespace OutlookAppointment
         Outlook.CalendarModule Calendar;
         static HttpClient client = new HttpClient();
         string workingDirectory = Environment.CurrentDirectory;
+        static int TenenatId = 1;
+        static string baseUrl = "https://localhost:44308/";
 
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
               
 
-            //using (StreamReader r = new StreamReader($"../../appsettings.json"))
-            //{
-            //    string json = r.ReadToEnd();
-            //    AppConfig items = JsonConvert.DeserializeObject<AppConfig>(json);
-            //}
-
-           
+         
         }
 
-        public  void UploadAppointment() { 
-        
-             Outlook.Folder calFolder =
-            Application.Session.GetDefaultFolder(
-            Outlook.OlDefaultFolders.olFolderCalendar)
-            as Outlook.Folder;
-            DateTime start = DateTime.Now.AddDays(-30);
-            DateTime end = start.AddDays(60);
-            Outlook.Items rangeAppts = GetAppointmentsInRange(calFolder, start, end);
-            if (rangeAppts != null)
-            {
-                Debug.WriteLine("All appointment are here");
-                foreach (Outlook.AppointmentItem appt in rangeAppts)
+        public  void UploadAppointment() {
+             
+                var task = Task.Run(() => GetStartTimeAsync(TenenatId));
+                task.Wait();
+                DateTime startTime = task.Result;
+             
+                Outlook.Folder calFolder =
+                Application.Session.GetDefaultFolder(
+                Outlook.OlDefaultFolders.olFolderCalendar)
+                as Outlook.Folder;
+                DateTime start = startTime;
+                DateTime end = start.AddDays(6);
+                Outlook.Items rangeAppts = GetAppointmentsInRange(calFolder, start, end);
+                if (rangeAppts != null)
                 {
-
-
-                    List<string> userList = appt.RequiredAttendees.Split(';').ToList();
-                    string CompanyName = "";
-
-                    for (int i = 1; i < appt.Recipients.Count; i++)
-                    {
-                        string email = GetEmailAddressOfAttendee(appt.Recipients[i]);
-                        string splittedValue = email.Split('@').ToList()[1];
-                        CompanyName = splittedValue.Split('.').ToList()[0];
-                    }
-
-                    foreach (var trackUser in userList.Skip(1))
+                    Debug.WriteLine("All appointment are here");
+                    foreach (Outlook.AppointmentItem appt in rangeAppts)
                     {
 
-                        var row = new Appointment()
+
+                        List<string> userList = appt.RequiredAttendees.Split(';').ToList();
+                        string CompanyName = "";
+
+                        for (int i = 1; i < appt.Recipients.Count; i++)
                         {
-                            CompanyName = CompanyName,
-                            FullName = trackUser,
-                            MeetingPurpose = 1,
-                            VisitingEmployee = appt.Organizer,
-                            CheckIn = appt.Start,
-                            MeetingDescription = appt.Subject
-                        };
+                            string email = GetEmailAddressOfAttendee(appt.Recipients[i]);
+                            string splittedValue = email.Split('@').ToList()[1];
+                            CompanyName = splittedValue.Split('.').ToList()[0];
+                        }
 
-                        AddAppointment(row);
+                        foreach (var trackUser in userList.Skip(1))
+                        {
+
+                            var row = new Appointment()
+                            {
+                                CompanyName = CompanyName,
+                                FullName = trackUser,
+                                MeetingPurpose = 1,
+                                VisitingEmployee = appt.Organizer,
+                                CheckIn = appt.Start,
+                                MeetingDescription = appt.Subject
+                            };
+
+                            AddAppointment(row);
+                        }
+
+                        Debug.WriteLine("Subject: " + appt.Companies
+                            + " Start: " + appt.Start.ToString("g"));
                     }
-
- 
-
-                   
-
-                    Debug.WriteLine("Subject: " + appt.Companies
-                        + " Start: " + appt.Start.ToString("g"));
                 }
-            }
-            else
-            {
-                Debug.WriteLine("No appointmnet  are here");
-            }
+                else
+                {
+                    Debug.WriteLine("No appointmnet  are here");
+                }
 
-                
+
+         
+
         }
 
         protected override Microsoft.Office.Core.IRibbonExtensibility CreateRibbonExtensibilityObject()
@@ -180,13 +181,32 @@ namespace OutlookAppointment
             string output = JsonConvert.SerializeObject(param);
 
 
-            client.PostAsync("https://localhost:44308/api/visitor/add-appointment", new StringContent(output, Encoding.UTF8, "application/json"));
+            client.PostAsync($"{baseUrl}api/visitor/add-appointment", new StringContent(output, Encoding.UTF8, "application/json"));
+      
         }
+
+        async Task<DateTime> GetStartTimeAsync(int TenantId) {
+             
+            HttpResponseMessage response = await client.GetAsync($"{baseUrl}api/visitor/outlook-tenant-intitaltime?tenantId={TenantId}");
+            if (response.IsSuccessStatusCode)
+            {
+                DateTime intitalTime = await response.Content.ReadAsAsync<DateTime>();
+                return intitalTime;
+            }
+
+            return DateTime.Now.Date;  
+        }
+
     }
 
     public class AppConfig
     { 
         public string Tenant { get; set; }
+    }
+
+    public class IntitalTime
+    { 
+        public DateTime StartTime { get; set; }
     }
 
     public class Appointment

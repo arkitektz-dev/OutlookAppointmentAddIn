@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"><?define OutlookAppointment_TargetDir=$(var.OutlookAppointment.TargetDir)?>
+	<?define VistoApplication_TargetDir="C:\Users\Admin\source\repos\OutlookAppointment\OutlookAppointment\bin\Debug\"?>
+	<Product Id="*" Name="VistoProjectInstaller" Language="1033" Version="1.0.0.0" Manufacturer="Arkitetkz-Solutions" UpgradeCode="19c7e7f5-e1bf-4128-a95a-4e4d4500a968">
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+		<MediaTemplate />
+
+		<Feature Id="ProductFeature" Title="VistoProjectInstaller" Level="1">
+			<ComponentGroupRef Id="ProductComponents" />
+			<ComponentGroupRef Id="ProgramFilesFolder_files" />  
+		</Feature>
+	</Product>
+
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFilesFolder">
+				<Directory Id="INSTALLFOLDER" Name="VistoProjectInstaller" />
+			</Directory>
+		</Directory>
+	</Fragment>
+
+	<Fragment>
+		<ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+			<!-- TODO: Remove the comments around this Component element and the ComponentRef below in order to add resources to this installer. -->
+			<!-- <Component Id="ProductComponent"> -->
+				<!-- TODO: Insert files, registry keys, and other resources here. -->
+			<!-- </Component> -->
+		</ComponentGroup>
+	</Fragment>
+	<Fragment>
+	  <ComponentGroup Id="ProgramFilesFolder_files" Directory="ProgramFilesFolder">
+	    <Component Id="OutlookAppointment.dll" Guid="0b1a8e26-a43e-40d5-bb00-1b7efe148b5c">
+	      <File Id="OutlookAppointment.dll" Name="OutlookAppointment.dll" Source="$(var.OutlookAppointment_TargetDir)OutlookAppointment.dll" />
+	    </Component>
+	    <Component Id="Microsoft.Office.Tools.Outlook.v4.0.Utilities.dll" Guid="ace398b9-ec71-42eb-968f-07c487ac292a">
+	      <File Id="Microsoft.Office.Tools.Outlook.v4.0.Utilities.dll" Name="Microsoft.Office.Tools.Outlook.v4.0.Utilities.dll" Source="$(var.OutlookAppointment_TargetDir)Microsoft.Office.Tools.Outlook.v4.0.Utilities.dll" />
+	    </Component>
+	    <Component Id="Microsoft.Office.Tools.Common.v4.0.Utilities.dll" Guid="66879b0b-b829-41a1-9d2e-89e235ac9061">
+	      <File Id="Microsoft.Office.Tools.Common.v4.0.Utilities.dll" Name="Microsoft.Office.Tools.Common.v4.0.Utilities.dll" Source="$(var.OutlookAppointment_TargetDir)Microsoft.Office.Tools.Common.v4.0.Utilities.dll" />
+	    </Component>
+	    <Component Id="Newtonsoft.Json.dll" Guid="2802ebc5-ae29-4929-ac24-3d17400b5334">
+	      <File Id="Newtonsoft.Json.dll" Name="Newtonsoft.Json.dll" Source="$(var.OutlookAppointment_TargetDir)Newtonsoft.Json.dll" />
+	    </Component>
+
+ 
+		  
+		<Component Id="appsettings.json" Guid="F9CC0E51-E1D8-4257-81CC-041BF7BE47BD">
+			  <File Id="appsettings.json" Name="appsettings.json" Source="$(var.VistoApplication_TargetDir)appsettings.json" />
+	   </Component>
+		  
+		  
+	  </ComponentGroup>
+	</Fragment>
+</Wix>

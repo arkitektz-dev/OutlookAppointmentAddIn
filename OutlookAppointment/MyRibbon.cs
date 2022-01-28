@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows.Forms;
 using Office = Microsoft.Office.Core;
 
 // TODO:  Follow these steps to enable the Ribbon (XML) item:
@@ -40,6 +41,7 @@ namespace OutlookAppointment
         public void OnTextButton(Office.IRibbonControl control)
         {
             Globals.ThisAddIn.UploadAppointment();
+            MessageBox.Show("All new appointments are uploaded");
         }
 
         #region IRibbonExtensibility Members
