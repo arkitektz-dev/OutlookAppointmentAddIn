@@ -231,6 +231,7 @@
     can be found.
   -->
   <ItemGroup>
+    <Compile Include="Model\AppointmentSaveDto.cs" />
     <Compile Include="MyRibbon.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>

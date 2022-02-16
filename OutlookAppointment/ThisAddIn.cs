@@ -13,6 +13,7 @@ using Microsoft.Office.Interop.Outlook;
 using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Net.Http.Headers;
+using OutlookAppointment.Model;
 
 namespace OutlookAppointment
 {
@@ -53,6 +54,8 @@ namespace OutlookAppointment
 
 
                         List<string> userList = appt.RequiredAttendees.Split(';').ToList();
+                        List<AttendeeDetail> attendee = new List<AttendeeDetail>();
+                        
                         string CompanyName = "";
 
                         for (int i = 1; i < appt.Recipients.Count; i++)
@@ -60,6 +63,13 @@ namespace OutlookAppointment
                             string email = GetEmailAddressOfAttendee(appt.Recipients[i]);
                             string splittedValue = email.Split('@').ToList()[1];
                             CompanyName = splittedValue.Split('.').ToList()[0];
+
+                            attendee.Add(new AttendeeDetail()
+                            {
+                                Email = email,
+                                Name = userList[i - 1]
+                            });
+
                         }
 
                         foreach (var trackUser in userList.Skip(1))
@@ -75,8 +85,22 @@ namespace OutlookAppointment
                                 MeetingDescription = appt.Subject
                             };
 
-                            AddAppointment(row);
-                        }
+                            var task2 = Task.Run(() => AddAppointment(row));
+                            task2.Wait();
+
+
+                               AppointmentSaveDto result = task2.Result;
+
+                                if (result.Id != null && result.Id != 0) {
+                                    var getAttendeeEmail = attendee.Where(x => x.Name == trackUser).Select(x => x.Email).FirstOrDefault();
+                                    if (getAttendeeEmail != null)
+                                    {
+                                         CreateEmailItem("Appointment", getAttendeeEmail, $"Your appointment number is ${result.Id}");
+                                    }
+                                }
+
+                   
+                         }
 
                         Debug.WriteLine("Subject: " + appt.Companies
                             + " Start: " + appt.Start.ToString("g"));
@@ -176,13 +200,15 @@ namespace OutlookAppointment
 
         #endregion
 
-        void AddAppointment(Appointment param)
+        async Task<AppointmentSaveDto> AddAppointment(Appointment param)
         {
             string output = JsonConvert.SerializeObject(param);
 
 
-            client.PostAsync($"{baseUrl}api/visitor/add-appointment", new StringContent(output, Encoding.UTF8, "application/json"));
-      
+            var result = await client.PostAsync($"{baseUrl}api/visitor/add-appointment", new StringContent(output, Encoding.UTF8, "application/json"));
+            var response = await result.Content.ReadAsStringAsync();
+            AppointmentSaveDto myDeserializedClass = JsonConvert.DeserializeObject<AppointmentSaveDto>(response);
+            return myDeserializedClass;
         }
 
         async Task<DateTime> GetStartTimeAsync(int TenantId) {
@@ -197,6 +223,24 @@ namespace OutlookAppointment
             return DateTime.Now.Date;  
         }
 
+        private void CreateEmailItem(string subjectEmail,
+       string toEmail, string bodyEmail)
+        {
+            Outlook.MailItem eMail = (Outlook.MailItem)
+                this.Application.CreateItem(Outlook.OlItemType.olMailItem);
+            eMail.Subject = subjectEmail;
+            eMail.To = toEmail;
+            eMail.Body = bodyEmail;
+            eMail.Importance = Outlook.OlImportance.olImportanceLow;
+            ((Outlook._MailItem)eMail).Send();
+        }
+
+    }
+
+    public class AttendeeDetail
+    { 
+        public string Email { get; set; }
+        public string Name { get; set; }
     }
 
     public class AppConfig
