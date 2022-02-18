@@ -14,6 +14,8 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Net.Http.Headers;
 using OutlookAppointment.Model;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace OutlookAppointment
 {
@@ -95,7 +97,7 @@ namespace OutlookAppointment
                                     var getAttendeeEmail = attendee.Where(x => x.Name == trackUser).Select(x => x.Email).FirstOrDefault();
                                     if (getAttendeeEmail != null)
                                     {
-                                         CreateEmailItem("Appointment", getAttendeeEmail, $"Your appointment number is ${result.Id}");
+                                         CreateEmailItem("Appointment", getAttendeeEmail, $"Please use the following barcode to check in if then enter this {result.Id}", result.Id);
                                     }
                                 }
 
@@ -224,13 +226,22 @@ namespace OutlookAppointment
         }
 
         private void CreateEmailItem(string subjectEmail,
-       string toEmail, string bodyEmail)
+       string toEmail, string bodyEmail,int? number)
         {
+            BarcodeLib.Barcode b = new BarcodeLib.Barcode();
+            Image img = b.Encode(BarcodeLib.TYPE.CODE39, number.ToString(), Color.Black, Color.White, 290, 120);
+            Bitmap bImage = (Bitmap)img;  // Your Bitmap Image
+            System.IO.MemoryStream ms = new MemoryStream();
+            bImage.Save(ms, ImageFormat.Jpeg);
+            byte[] byteImage = ms.ToArray();
+            var SigBase64 = Convert.ToBase64String(byteImage);
+
             Outlook.MailItem eMail = (Outlook.MailItem)
                 this.Application.CreateItem(Outlook.OlItemType.olMailItem);
             eMail.Subject = subjectEmail;
             eMail.To = toEmail;
-            eMail.Body = bodyEmail;
+            //eMail.Body = bodyEmail; 
+            eMail.HTMLBody = $"<p>{bodyEmail}</p></br></br></br><img src='data:image/png;base64, {SigBase64}' />";
             eMail.Importance = Outlook.OlImportance.olImportanceLow;
             ((Outlook._MailItem)eMail).Send();
         }
