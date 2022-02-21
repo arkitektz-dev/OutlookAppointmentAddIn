@@ -46,7 +46,7 @@ namespace OutlookAppointment
         private void monitor_AppointmentAdded(object sender, EventArgs<Outlook.AppointmentItem> e)
         {
             Debug.Print("Appointment Added: {0}", e.Value.GlobalAppointmentID);
-            Outlook.AppointmentItem appt = (AppointmentItem)e;
+            //Outlook.AppointmentItem appt = (AppointmentItem)e;
             UploadAppointment();
         }
 
