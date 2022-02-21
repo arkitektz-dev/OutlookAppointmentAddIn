@@ -34,13 +34,17 @@ namespace OutlookAppointment
     {
         private Office.IRibbonUI ribbon;
 
+
         public MyRibbon()
         {
         }
 
+ 
+
         public void OnTextButton(Office.IRibbonControl control)
         {
-            Globals.ThisAddIn.UploadAppointment();
+            Globals.ThisAddIn.UploadAppointment(); 
+
             MessageBox.Show("All new appointments are uploaded");
         }
 

@@ -16,6 +16,7 @@ using System.Net.Http.Headers;
 using OutlookAppointment.Model;
 using System.Drawing;
 using System.Drawing.Imaging;
+using OutlookAppointment.AppointmentMonitor;
 
 namespace OutlookAppointment
 {
@@ -27,13 +28,44 @@ namespace OutlookAppointment
         string workingDirectory = Environment.CurrentDirectory;
         static int TenenatId = 1;
         static string baseUrl = "https://localhost:44308/";
+        static string uploadButton = "Start";
+       
 
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
-              
-
-         
+            CalendarMonitor monitor = new CalendarMonitor(this.Application.Session);
+            monitor.AppointmentAdded +=
+                new EventHandler<EventArgs<AppointmentItem>>(monitor_AppointmentAdded);
+            monitor.AppointmentModified +=
+                new EventHandler<EventArgs<AppointmentItem>>(monitor_AppointmentModified);
+            monitor.AppointmentDeleting +=
+                new EventHandler<CancelEventArgs<AppointmentItem>>(monitor_AppointmentDeleting);
         }
+
+
+        private void monitor_AppointmentAdded(object sender, EventArgs<Outlook.AppointmentItem> e)
+        {
+            Debug.Print("Appointment Added: {0}", e.Value.GlobalAppointmentID);
+            Outlook.AppointmentItem appt = (AppointmentItem)e;
+            UploadAppointment();
+        }
+
+        private void monitor_AppointmentModified(object sender, EventArgs<AppointmentItem> e)
+        {
+            Debug.Print("Appointment Modified: {0}", e.Value.GlobalAppointmentID);
+        }
+
+        private void monitor_AppointmentDeleting(object sender, CancelEventArgs<AppointmentItem> e)
+        {
+            Debug.Print("Appointment Deleting: {0}", e.Value.GlobalAppointmentID);
+            DialogResult dr = MessageBox.Show("Delete appointment?", "Confirm",
+            MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (dr == DialogResult.No)
+            {
+                e.Cancel = true;
+            }
+        }
+
 
         public  void UploadAppointment() {
              
@@ -46,7 +78,7 @@ namespace OutlookAppointment
                 Outlook.OlDefaultFolders.olFolderCalendar)
                 as Outlook.Folder;
                 DateTime start = startTime;
-                DateTime end = start.AddDays(6);
+                DateTime end = start.AddDays(12);
                 Outlook.Items rangeAppts = GetAppointmentsInRange(calFolder, start, end);
                 if (rangeAppts != null)
                 {
@@ -54,7 +86,7 @@ namespace OutlookAppointment
                     foreach (Outlook.AppointmentItem appt in rangeAppts)
                     {
 
-
+                       
                         List<string> userList = appt.RequiredAttendees.Split(';').ToList();
                         List<AttendeeDetail> attendee = new List<AttendeeDetail>();
                         
@@ -65,11 +97,13 @@ namespace OutlookAppointment
                             string email = GetEmailAddressOfAttendee(appt.Recipients[i]);
                             string splittedValue = email.Split('@').ToList()[1];
                             CompanyName = splittedValue.Split('.').ToList()[0];
+                            
+                           
 
                             attendee.Add(new AttendeeDetail()
                             {
                                 Email = email,
-                                Name = userList[i - 1]
+                                Name = userList[i - 1], 
                             });
 
                         }
@@ -84,7 +118,8 @@ namespace OutlookAppointment
                                 MeetingPurpose = 1,
                                 VisitingEmployee = appt.Organizer,
                                 CheckIn = appt.Start,
-                                MeetingDescription = appt.Subject
+                                MeetingDescription = appt.Subject,
+                                GlobalAppointmentId = appt.GlobalAppointmentID
                             };
 
                             var task2 = Task.Run(() => AddAppointment(row));
@@ -94,7 +129,7 @@ namespace OutlookAppointment
                                AppointmentSaveDto result = task2.Result;
 
                                 if (result.Id != null && result.Id != 0) {
-                                    var getAttendeeEmail = attendee.Where(x => x.Name == trackUser).Select(x => x.Email).FirstOrDefault();
+                                    var getAttendeeEmail = attendee.Where(x => x.Name.Trim().ToLower() == trackUser.Trim().ToLower()).Select(x => x.Email).FirstOrDefault();
                                     if (getAttendeeEmail != null)
                                     {
                                          CreateEmailItem("Appointment", getAttendeeEmail, $"Please use the following barcode to check in if then enter this {result.Id}", result.Id);
@@ -252,6 +287,7 @@ namespace OutlookAppointment
     { 
         public string Email { get; set; }
         public string Name { get; set; }
+        public string GlobalAppointmentId { get; set; }
     }
 
     public class AppConfig
@@ -266,6 +302,7 @@ namespace OutlookAppointment
 
     public class Appointment
     {
+        public string GlobalAppointmentId { get; set; }
         public string FullName { get; set; }
         public string CompanyName { get; set; }
         public int MeetingPurpose { get; set; }
