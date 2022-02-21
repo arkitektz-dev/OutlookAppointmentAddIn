@@ -67,7 +67,7 @@ namespace OutlookAppointment
         }
 
 
-        public  void UploadAppointment() {
+        public void UploadAppointment() {
              
                 var task = Task.Run(() => GetStartTimeAsync(TenenatId));
                 task.Wait();
