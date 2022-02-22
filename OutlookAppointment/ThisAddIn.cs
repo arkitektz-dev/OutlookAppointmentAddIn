@@ -17,6 +17,7 @@ using OutlookAppointment.Model;
 using System.Drawing;
 using System.Drawing.Imaging;
 using OutlookAppointment.AppointmentMonitor;
+using System.Net;
 
 namespace OutlookAppointment
 {
@@ -27,10 +28,10 @@ namespace OutlookAppointment
         static HttpClient client = new HttpClient();
         string workingDirectory = Environment.CurrentDirectory;
         static int TenenatId = 1;
-        static string baseUrl = "https://localhost:44308/";
+        static string baseUrl = "https://vms-lim-uat.azurewebsites.net/";
         static string uploadButton = "Start";
-       
 
+         
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
             CalendarMonitor monitor = new CalendarMonitor(this.Application.Session);
@@ -68,8 +69,11 @@ namespace OutlookAppointment
 
 
         public void UploadAppointment() {
-             
-                var task = Task.Run(() => GetStartTimeAsync(TenenatId));
+
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls12;
+            ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+
+            var task = Task.Run(() => GetStartTimeAsync(TenenatId));
                 task.Wait();
                 DateTime startTime = task.Result;
              

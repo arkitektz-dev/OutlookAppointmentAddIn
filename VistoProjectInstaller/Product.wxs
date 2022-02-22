@@ -43,11 +43,7 @@
 	      <File Id="Newtonsoft.Json.dll" Name="Newtonsoft.Json.dll" Source="$(var.OutlookAppointment_TargetDir)Newtonsoft.Json.dll" />
 	    </Component>
 
- 
-		  
-		<Component Id="appsettings.json" Guid="F9CC0E51-E1D8-4257-81CC-041BF7BE47BD">
-			  <File Id="appsettings.json" Name="appsettings.json" Source="$(var.VistoApplication_TargetDir)appsettings.json" />
-	   </Component>
+  
 		  
 		  
 	  </ComponentGroup>
