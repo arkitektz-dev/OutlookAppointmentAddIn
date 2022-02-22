@@ -136,7 +136,7 @@ namespace OutlookAppointment
                                     var getAttendeeEmail = attendee.Where(x => x.Name.Trim().ToLower() == trackUser.Trim().ToLower()).Select(x => x.Email).FirstOrDefault();
                                     if (getAttendeeEmail != null)
                                     {
-                                         CreateEmailItem("Appointment", getAttendeeEmail, $"Please use the following barcode to check in if then enter this {result.Id}", result.Id);
+                                         CreateEmailItem("Appointment", getAttendeeEmail, $"Please use the following barcode to checkin. If the above is not working the please use the following as check in number {result.Id}", result.Id);
                                     }
                                 }
 
@@ -280,7 +280,7 @@ namespace OutlookAppointment
             eMail.Subject = subjectEmail;
             eMail.To = toEmail;
             //eMail.Body = bodyEmail; 
-            eMail.HTMLBody = $"<p>{bodyEmail}</p></br></br></br><img src='data:image/png;base64, {SigBase64}' />";
+            eMail.HTMLBody = $"<p>Please use the following barcode to checkin.</p></br></br></br><img src='data:image/png;base64, {SigBase64}' /> <br /> <p>If the above is not working then please use the following as check in number : {number}</p>";
             eMail.Importance = Outlook.OlImportance.olImportanceLow;
             ((Outlook._MailItem)eMail).Send();
         }
