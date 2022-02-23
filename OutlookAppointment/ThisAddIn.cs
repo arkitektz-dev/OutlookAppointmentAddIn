@@ -28,7 +28,7 @@ namespace OutlookAppointment
         static HttpClient client = new HttpClient();
         string workingDirectory = Environment.CurrentDirectory;
         static int TenenatId = 1;
-        static string baseUrl = "https://vms-lim-uat.azurewebsites.net/";
+        static string baseUrl = "https://localhost:44308/";
         static string uploadButton = "Start";
 
          
@@ -46,9 +46,68 @@ namespace OutlookAppointment
 
         private void monitor_AppointmentAdded(object sender, EventArgs<Outlook.AppointmentItem> e)
         {
-            Debug.Print("Appointment Added: {0}", e.Value.GlobalAppointmentID);
-            //Outlook.AppointmentItem appt = (AppointmentItem)e;
-            UploadAppointment();
+
+            AppointmentItem appt = OutlookAppointment.Global.OutlookState.appointmentState;
+
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls12;
+            ServicePointManager.ServerCertificateValidationCallback += (sender1, certificate, chain, sslPolicyErrors) => true;
+
+            List<string> userList = appt.RequiredAttendees.Split(';').ToList();
+            List<AttendeeDetail> attendee = new List<AttendeeDetail>();
+
+            string CompanyName = "";
+
+            for (int i = 1; i < appt.Recipients.Count; i++)
+            {
+                string email = GetEmailAddressOfAttendee(appt.Recipients[i]);
+                string splittedValue = email.Split('@').ToList()[1];
+                CompanyName = splittedValue.Split('.').ToList()[0];
+
+
+
+                attendee.Add(new AttendeeDetail()
+                {
+                    Email = email,
+                    Name = userList[i - 1],
+                });
+
+            }
+
+            foreach (var trackUser in userList.Skip(1))
+            {
+
+                var row = new Appointment()
+                {
+                    CompanyName = CompanyName,
+                    FullName = trackUser,
+                    MeetingPurpose = 1,
+                    VisitingEmployee = appt.Organizer,
+                    CheckIn = appt.Start,
+                    MeetingDescription = appt.Subject,
+                    GlobalAppointmentId = appt.GlobalAppointmentID
+                };
+
+                var task2 = Task.Run(() => AddAppointment(row));
+                task2.Wait();
+
+
+                AppointmentSaveDto result = task2.Result;
+
+                if (result.Id != null && result.Id != 0)
+                {
+                    var getAttendeeEmail = attendee.Where(x => x.Name.Trim().ToLower() == trackUser.Trim().ToLower()).Select(x => x.Email).FirstOrDefault();
+                    if (getAttendeeEmail != null)
+                    {
+                        CreateEmailItem("Appointment", getAttendeeEmail, $"Please use the following barcode to checkin. If the above is not working the please use the following as check in number {result.Id}", result.Id);
+                    }
+                }
+
+
+            }
+
+         
+
+            // UploadAppointment();
         }
 
         private void monitor_AppointmentModified(object sender, EventArgs<AppointmentItem> e)

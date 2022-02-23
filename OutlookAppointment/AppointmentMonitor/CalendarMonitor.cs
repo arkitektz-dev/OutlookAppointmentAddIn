@@ -82,12 +82,16 @@ namespace OutlookAppointment.AppointmentMonitor
         {
             if (anItem is AppointmentItem)
             {
+                OutlookAppointment.Global.OutlookState.appointmentState = (anItem as AppointmentItem);
+
                 if (this.AppointmentAdded != null)
                 {
                     this.AppointmentAdded(this,
                         new EventArgs<AppointmentItem>((AppointmentItem)anItem));
                 }
             }
+
+
         }
 
         private void CalendarItems_ItemChange(object anItem)
