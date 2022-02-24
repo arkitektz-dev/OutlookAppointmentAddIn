@@ -28,7 +28,7 @@ namespace OutlookAppointment
         static HttpClient client = new HttpClient();
         string workingDirectory = Environment.CurrentDirectory;
         static int TenenatId = 1;
-        static string baseUrl = "https://localhost:44308/";
+        static string baseUrl = "https://vms-lim-uat.azurewebsites.net/";
         static string uploadButton = "Start";
 
          
@@ -128,92 +128,7 @@ namespace OutlookAppointment
 
 
         public void UploadAppointment() {
-
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls12;
-            ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
-
-            var task = Task.Run(() => GetStartTimeAsync(TenenatId));
-                task.Wait();
-                DateTime startTime = task.Result;
              
-                Outlook.Folder calFolder =
-                Application.Session.GetDefaultFolder(
-                Outlook.OlDefaultFolders.olFolderCalendar)
-                as Outlook.Folder;
-                DateTime start = startTime;
-                DateTime end = start.AddDays(12);
-                Outlook.Items rangeAppts = GetAppointmentsInRange(calFolder, start, end);
-                if (rangeAppts != null)
-                {
-                    Debug.WriteLine("All appointment are here");
-                    foreach (Outlook.AppointmentItem appt in rangeAppts)
-                    {
-
-                       
-                        List<string> userList = appt.RequiredAttendees.Split(';').ToList();
-                        List<AttendeeDetail> attendee = new List<AttendeeDetail>();
-                        
-                        string CompanyName = "";
-
-                        for (int i = 1; i < appt.Recipients.Count; i++)
-                        {
-                            string email = GetEmailAddressOfAttendee(appt.Recipients[i]);
-                            string splittedValue = email.Split('@').ToList()[1];
-                            CompanyName = splittedValue.Split('.').ToList()[0];
-                            
-                           
-
-                            attendee.Add(new AttendeeDetail()
-                            {
-                                Email = email,
-                                Name = userList[i - 1], 
-                            });
-
-                        }
-
-                        foreach (var trackUser in userList.Skip(1))
-                        {
-
-                            var row = new Appointment()
-                            {
-                                CompanyName = CompanyName,
-                                FullName = trackUser,
-                                MeetingPurpose = 1,
-                                VisitingEmployee = appt.Organizer,
-                                CheckIn = appt.Start,
-                                MeetingDescription = appt.Subject,
-                                GlobalAppointmentId = appt.GlobalAppointmentID
-                            };
-
-                            var task2 = Task.Run(() => AddAppointment(row));
-                            task2.Wait();
-
-
-                               AppointmentSaveDto result = task2.Result;
-
-                                if (result.Id != null && result.Id != 0) {
-                                    var getAttendeeEmail = attendee.Where(x => x.Name.Trim().ToLower() == trackUser.Trim().ToLower()).Select(x => x.Email).FirstOrDefault();
-                                    if (getAttendeeEmail != null)
-                                    {
-                                         CreateEmailItem("Appointment", getAttendeeEmail, $"Please use the following barcode to checkin. If the above is not working the please use the following as check in number {result.Id}", result.Id);
-                                    }
-                                }
-
-                   
-                         }
-
-                        Debug.WriteLine("Subject: " + appt.Companies
-                            + " Start: " + appt.Start.ToString("g"));
-                    }
-                }
-                else
-                {
-                    Debug.WriteLine("No appointmnet  are here");
-                }
-
-
-         
-
         }
 
         protected override Microsoft.Office.Core.IRibbonExtensibility CreateRibbonExtensibilityObject()
