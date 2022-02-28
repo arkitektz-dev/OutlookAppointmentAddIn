@@ -47,7 +47,7 @@ namespace OutlookAppointment
         private void monitor_AppointmentAdded(object sender, EventArgs<Outlook.AppointmentItem> e)
         {
 
-            AppointmentItem appt = OutlookAppointment.Global.OutlookState.appointmentState;
+            AppointmentItem appt = Global.OutlookState.appointmentState;
 
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls12;
             ServicePointManager.ServerCertificateValidationCallback += (sender1, certificate, chain, sslPolicyErrors) => true;
@@ -59,27 +59,14 @@ namespace OutlookAppointment
 
             for (int i = 1; i < appt.Recipients.Count; i++)
             {
-                string email = GetEmailAddressOfAttendee(appt.Recipients[i]);
+                string email = GetEmailAddressOfAttendee(appt.Recipients[i+1]);
                 string splittedValue = email.Split('@').ToList()[1];
                 CompanyName = splittedValue.Split('.').ToList()[0];
-
-
-
-                attendee.Add(new AttendeeDetail()
-                {
-                    Email = email,
-                    Name = userList[i - 1],
-                });
-
-            }
-
-            foreach (var trackUser in userList.Skip(1))
-            {
 
                 var row = new Appointment()
                 {
                     CompanyName = CompanyName,
-                    FullName = trackUser,
+                    FullName = userList[i],
                     MeetingPurpose = 1,
                     VisitingEmployee = appt.Organizer,
                     CheckIn = appt.Start,
@@ -95,19 +82,10 @@ namespace OutlookAppointment
 
                 if (result.Id != null && result.Id != 0)
                 {
-                    var getAttendeeEmail = attendee.Where(x => x.Name.Trim().ToLower() == trackUser.Trim().ToLower()).Select(x => x.Email).FirstOrDefault();
-                    if (getAttendeeEmail != null)
-                    {
-                        CreateEmailItem("Appointment", getAttendeeEmail, $"Please use the following barcode to checkin. If the above is not working the please use the following as check in number {result.Id}", result.Id);
-                    }
+                    CreateEmailItem("Appointment", email, $"Please use the following barcode to checkin. If the above is not working the please use the following as check in number {result.Id}", result.Id);
                 }
 
-
             }
-
-         
-
-            // UploadAppointment();
         }
 
         private void monitor_AppointmentModified(object sender, EventArgs<AppointmentItem> e)
@@ -239,7 +217,7 @@ namespace OutlookAppointment
         }
 
         private void CreateEmailItem(string subjectEmail,
-       string toEmail, string bodyEmail,int? number)
+            string toEmail, string bodyEmail,int? number)
         {
             BarcodeLib.Barcode b = new BarcodeLib.Barcode();
             Image img = b.Encode(BarcodeLib.TYPE.CODE39, number.ToString(), Color.Black, Color.White, 290, 120);
