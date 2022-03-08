@@ -30,7 +30,7 @@ namespace OutlookAppointment
         static int TenenatId = 1;
         static string baseUrl = "https://vms-lim-uat.azurewebsites.net/";
         static string uploadButton = "Start";
-
+        static string accountEmail = "";
          
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
@@ -48,7 +48,8 @@ namespace OutlookAppointment
         {
 
             AppointmentItem appt = Global.OutlookState.appointmentState;
-
+            var item = new  Outlook.Application();
+            DisplayAccountInformation(item);
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls12;
             ServicePointManager.ServerCertificateValidationCallback += (sender1, certificate, chain, sslPolicyErrors) => true;
 
@@ -59,6 +60,11 @@ namespace OutlookAppointment
 
             for (int i = 1; i < appt.Recipients.Count; i++)
             {
+
+                string OrganizerEmail = GetEmailAddressOfAttendee(appt.Recipients[i]);
+                if (OrganizerEmail.Trim().ToLower() != accountEmail.Trim().ToLower())
+                    return;
+
                 string email = GetEmailAddressOfAttendee(appt.Recipients[i+1]);
                 string splittedValue = email.Split('@').ToList()[1];
                 CompanyName = splittedValue.Split('.').ToList()[0];
@@ -107,6 +113,63 @@ namespace OutlookAppointment
 
         public void UploadAppointment() {
              
+        }
+
+        public void DisplayAccountInformation(Outlook.Application application)
+        {
+
+            // The Namespace Object (Session) has a collection of accounts.
+            Outlook.Accounts accounts = application.Session.Accounts;
+
+            // Concatenate a message with information about all accounts.
+            StringBuilder builder = new StringBuilder();
+
+            // Loop over all accounts and print detail account information.
+            // All properties of the Account object are read-only.
+            foreach (Outlook.Account account in accounts)
+            {
+
+                // The DisplayName property represents the friendly name of the account.
+                builder.AppendFormat("DisplayName: {0}\n", account.DisplayName);
+
+                // The UserName property provides an account-based context to determine identity.
+                builder.AppendFormat("UserName: {0}\n", account.UserName);
+
+                // The SmtpAddress property provides the SMTP address for the account.
+                builder.AppendFormat("SmtpAddress: {0}\n", account.SmtpAddress);
+
+                accountEmail = account.SmtpAddress;
+
+                // The AccountType property indicates the type of the account.
+                builder.Append("AccountType: ");
+                switch (account.AccountType)
+                {
+
+                    case Outlook.OlAccountType.olExchange:
+                        builder.AppendLine("Exchange");
+                        break;
+
+                    case Outlook.OlAccountType.olHttp:
+                        builder.AppendLine("Http");
+                        break;
+
+                    case Outlook.OlAccountType.olImap:
+                        builder.AppendLine("Imap");
+                        break;
+
+                    case Outlook.OlAccountType.olOtherAccount:
+                        builder.AppendLine("Other");
+                        break;
+
+                    case Outlook.OlAccountType.olPop3:
+                        builder.AppendLine("Pop3");
+                        break;
+                }
+
+                builder.AppendLine();
+            }
+
+            
         }
 
         protected override Microsoft.Office.Core.IRibbonExtensibility CreateRibbonExtensibilityObject()
