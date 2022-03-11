@@ -18,6 +18,8 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using OutlookAppointment.AppointmentMonitor;
 using System.Net;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace OutlookAppointment
 {
@@ -88,7 +90,9 @@ namespace OutlookAppointment
 
                 if (result.Id != null && result.Id != 0)
                 {
-                    CreateEmailItem("Appointment", email, $"Please use the following barcode to checkin. If the above is not working the please use the following as check in number {result.Id}", result.Id);
+                    var task3 = Task.Run(() => CreateEmailItem2Async("Appointment", email, $"Please use the following barcode to checkin. If the above is not working the please use the following as check in number {result.Id}", result.Id));
+                    task3.Wait();
+                    //CreateEmailItem("Appointment", email, $"Please use the following barcode to checkin. If the above is not working the please use the following as check in number {result.Id}", result.Id);
                 }
 
             }
@@ -290,16 +294,69 @@ namespace OutlookAppointment
             byte[] byteImage = ms.ToArray();
             var SigBase64 = Convert.ToBase64String(byteImage);
 
-            Outlook.MailItem eMail = (Outlook.MailItem)
-                this.Application.CreateItem(Outlook.OlItemType.olMailItem);
-            eMail.Subject = subjectEmail;
-            eMail.To = toEmail;
-            //eMail.Body = bodyEmail; 
-            eMail.HTMLBody = $"<p>Please use the following barcode to checkin.</p></br></br></br><img src='data:image/png;base64, {SigBase64}' /> <br /> <p>If the above is not working then please use the following as check in number : {number}</p>";
-            eMail.Importance = Outlook.OlImportance.olImportanceLow;
-            ((Outlook._MailItem)eMail).Send();
+            //Outlook.MailItem eMail = (Outlook.MailItem)
+            //    this.Application.CreateItem(Outlook.OlItemType.olMailItem);
+            //eMail.Subject = subjectEmail;
+            //eMail.To = toEmail;
+            ////eMail.Body = bodyEmail; 
+            //eMail.HTMLBody = $"<p>Please use the following barcode to checkin.</p></br></br></br><img src='data:image/png;base64, {SigBase64}' /> <br /> <p>If the above is not working then please use the following as check in number : {number}</p>";
+            //eMail.Importance = Outlook.OlImportance.olImportanceHigh;
+            //((Outlook._MailItem)eMail).Send();
+
+
+
+        }     
+        
+        
+        private async Task CreateEmailItem2Async(string subjectEmail,
+            string toEmail, string bodyEmail,int? number)
+        {
+
+            var result = await UploadImage(number);
+
+
+            var apiKey = "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";
+            var client1 = new SendGridClient(apiKey);
+            var subject = subjectEmail;
+            var from = new EmailAddress("arkitektzsolutions@gmail.com", subjectEmail);
+            var to = new EmailAddress(toEmail);
+            var plainTextContent = "";
+            var htmlContent = $"<p>Please use the following barcode to checkin.</p></br></br></br><img src='{result}' /> <br /> <p>If the above is not working then please use the following as check in number : {number}</p>";
+             
+            var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
+            var response = await client1.SendEmailAsync(msg);
+
         }
 
+        private async Task<string> UploadImage(int? number)
+        {
+            BarcodeLib.Barcode b = new BarcodeLib.Barcode();
+            Image img = b.Encode(BarcodeLib.TYPE.CODE39, number.ToString(), Color.Black, Color.White, 290, 120);
+            Bitmap bImage = (Bitmap)img;  // Your Bitmap Image
+            System.IO.MemoryStream ms = new MemoryStream();
+            bImage.Save(ms, ImageFormat.Jpeg);
+
+          
+
+            
+
+
+            var content = new MultipartFormDataContent();
+            var imageContent = new StreamContent(ms);
+            content.Add(imageContent, "barcode");
+
+            var response = await client.GetAsync($"{baseUrl}api/upload/upload-barcode?number={number.ToString()}");
+            var result = await response.Content.ReadAsStringAsync();
+            return result;
+        }
+
+
+
+    }
+
+    public class UploadImage
+    { 
+        public int? number { get; set; }
     }
 
     public class AttendeeDetail
