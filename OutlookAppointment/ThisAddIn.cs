@@ -64,8 +64,12 @@ namespace OutlookAppointment
             {
 
                 string OrganizerEmail = GetEmailAddressOfAttendee(appt.Recipients[i]);
-                if (OrganizerEmail.Trim().ToLower() != accountEmail.Trim().ToLower())
-                    return;
+                Debug.WriteLine(OrganizerEmail.Trim().ToLower());
+                Debug.WriteLine(accountEmail.Trim().ToLower());
+                Debug.WriteLine(GetEmailAddressOfAttendee(appt.Recipients[i]));
+
+                if (OrganizerEmail.Trim().ToLower() == accountEmail.Trim().ToLower())
+                    continue;
 
                 string email = GetEmailAddressOfAttendee(appt.Recipients[i+1]);
                 string splittedValue = email.Split('@').ToList()[1];
